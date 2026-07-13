@@ -1,0 +1,1730 @@
+{
+    "CF1000": {
+        "requirement": "When CF receives a \"No-Op\" command, CF shall increment the \"CF Valid-Command Counter\" and issue a cFE event message.",
+        "matches": [
+            {
+                "name": "NoopCmd",
+                "package": "CFE_TBL.edsl",
+                "kind": "container",
+                "score": 0.443
+            }
+        ]
+    },
+    "CF1001": {
+        "requirement": "When a \"Reset-Counters\" command is received, CF shall\u00a0set the command-specified \"housekeeping counters\" to a value of zero.",
+        "matches": [
+            {
+                "name": "Reset",
+                "package": "CF.edsl",
+                "kind": "enum",
+                "score": 0.5932
+            },
+            {
+                "name": "ResetCountersCmd",
+                "package": "CFE_TBL.edsl",
+                "kind": "container",
+                "score": 0.5837
+            },
+            {
+                "name": "ResetCountersCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5513
+            },
+            {
+                "name": "ResetCountersCmd",
+                "package": "CFE_SB.edsl",
+                "kind": "container",
+                "score": 0.5477
+            }
+        ]
+    },
+    "CF1002": {
+        "requirement": "If a command's header-specified length is not equal to the expected command length, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "ValidateCmd",
+                "package": "CFE_TBL.edsl",
+                "kind": "container",
+                "score": 0.3988
+            }
+        ]
+    },
+    "CF1003": {
+        "requirement": "When CF receives a valid command, CF shall increment the \"CF Valid-Command Counter\" and issue a \"Command Received\" cFE event message.",
+        "matches": [
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4536
+            }
+        ]
+    },
+    "CF1004": {
+        "requirement": "When CF receives a command, if the command is not valid, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "ValidateCmd",
+                "package": "CFE_TBL.edsl",
+                "kind": "container",
+                "score": 0.464
+            }
+        ]
+    },
+    "CF1004.1": {
+        "requirement": "When CF receives a command, CF shall check that the command is valid before execution.",
+        "matches": [
+            {
+                "name": "ValidateCmd",
+                "package": "CFE_TBL.edsl",
+                "kind": "container",
+                "score": 0.5174
+            }
+        ]
+    },
+    "CF1004.2": {
+        "requirement": "When CF rejects a command, CF shall issue a \"Command Rejected\" error event message and increment the \"CF Command Rejected\" Counter.",
+        "matches": [
+            {
+                "name": "HKCommandCounters",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4314
+            }
+        ]
+    },
+    "CF2000": {
+        "requirement": "When CF receives a CFDP receive-file protocol-directive PDU, CF shall process the file transfer request according to the directive-specified CFDP Mode, \"Unacknowledged\" Class-1 Service or \"Acknowledged\" Class-2 Service.",
+        "matches": [
+            {
+                "name": "CFDP",
+                "package": "CF.edsl",
+                "kind": "enum",
+                "score": 0.6625
+            },
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5619
+            }
+        ]
+    },
+    "CF2001": {
+        "requirement": "CF shall extract uplinked CFDP PDUs from cFE-SB messages.",
+        "matches": [
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4755
+            }
+        ]
+    },
+    "CF2002": {
+        "requirement": "CF shall extract file data from File-Data PDUs and reconstruct an identical copy of the extracted file from the meta-data-specified directory.",
+        "matches": [
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4834
+            }
+        ]
+    },
+    "CF2002.1": {
+        "requirement": "If CF detects that a \"fault\" has occurred, CF shall close out the transaction and issue an \"Error\" cFE event message.",
+        "matches": [
+            {
+                "name": "AbandonCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.3726
+            }
+        ]
+    },
+    "CF2002.1.2": {
+        "requirement": "CF shall detect the following scenarios and identify them as faults:\n1. Positive Ack Limit Reached\n2. Filestore Rejection\n3. File-CRC Mismatch Failure\n4. File-Size Error\n5. NAK Limit Reached\n6. Inactivity Limit Reached",
+        "matches": [
+            {
+                "name": "HkFault",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5071
+            }
+        ]
+    },
+    "CF2002.1.3": {
+        "requirement": "CF shall issue a DEBUG message if an attempt is made to reset a transaction that has already been freed",
+        "matches": [
+            {
+                "name": "AbandonCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4602
+            }
+        ]
+    },
+    "CF3000": {
+        "requirement": "When CF receives a \"Transfer File\" command, CF shall play back the file indicated by the command-specified: filename, source path, destination path, keep/delete flag, service class, priority, channel, and peer-entity id.",
+        "matches": [
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6396
+            },
+            {
+                "name": "PlaybackDirCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5925
+            },
+            {
+                "name": "SetParamCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5306
+            },
+            {
+                "name": "WriteQueueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5275
+            },
+            {
+                "name": "EnableDirPollingCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.523
+            }
+        ]
+    },
+    "CF3000.1": {
+        "requirement": "When CF receives a \"Transfer File\" command, if the command-specified is open, CF reject the command.",
+        "matches": [
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5439
+            },
+            {
+                "name": "DisableDirPollingCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.525
+            }
+        ]
+    },
+    "CF3000.3": {
+        "requirement": "When CF receives a \"Transfer File\" command, if the command-specified file is not found, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5541
+            },
+            {
+                "name": "DisableDirPollingCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5095
+            }
+        ]
+    },
+    "CF3000.4": {
+        "requirement": "When CF receives a \"Transfer File\" command, if the playback-pending queue is full, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "PurgeQueueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5981
+            },
+            {
+                "name": "DisableDequeueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5951
+            },
+            {
+                "name": "EnableDequeueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5668
+            },
+            {
+                "name": "WriteQueueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5507
+            },
+            {
+                "name": "DisableDirPollingCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.524
+            }
+        ]
+    },
+    "CF3000.5": {
+        "requirement": "When CF receives a \"Transfer File\" command, if the command-specified playback-channel number is not valid, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "SetParamCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5153
+            },
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5099
+            }
+        ]
+    },
+    "CF3000.6": {
+        "requirement": "When CF receives a \"Transfer File\" command, if the command-specified CFDP class is neither Class 1 nor Class 2, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "CFDP",
+                "package": "CF.edsl",
+                "kind": "enum",
+                "score": 0.6302
+            },
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5466
+            }
+        ]
+    },
+    "CF3001": {
+        "requirement": "When CF receives a \"Playback Directory\" command, CF shall play back all the files inside the command-specified directory as indicated by the command-specified service class, priority, destination path, keep/delete flag, channel, and peer-entity id.",
+        "matches": [
+            {
+                "name": "PlaybackDirCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6592
+            }
+        ]
+    },
+    "CF3001.1": {
+        "requirement": "While CF is playing back multiple files, if the next file to be transferred is open, CF shall skip its transfer and issue an error event message.",
+        "matches": [
+            {
+                "name": "DisableDirPollingCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4335
+            }
+        ]
+    },
+    "CF3001.3": {
+        "requirement": "When CF receives a \"Playback Directory\" command, if the command-specified directory is not found, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "PlaybackDirCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5401
+            }
+        ]
+    },
+    "CF3001.5": {
+        "requirement": "When CF receives a \"Playback Directory\" command, if the playback-pending queue is full, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "PlaybackDirCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5069
+            }
+        ]
+    },
+    "CF3001.6": {
+        "requirement": "When CF receives a \"Playback Directory\" command, if the command-specified playback channel number is not valid, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "PlaybackDirCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5145
+            }
+        ]
+    },
+    "CF3001.7": {
+        "requirement": "When CF receives a \"Playback Directory\" command, if the command-specified class number is not valid, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "PlaybackDirCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4841
+            }
+        ]
+    },
+    "CF3005": {
+        "requirement": "CF shall encapsulate and publish CFDP-PDUs as cFE-SB messages.",
+        "matches": [
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5017
+            }
+        ]
+    },
+    "CF3005.1": {
+        "requirement": "Each CF channel shall have a unique cFE-SB Message ID.",
+        "matches": [
+            {
+                "name": "SubEntries",
+                "package": "CFE_SB.edsl",
+                "kind": "container",
+                "score": 0.473
+            }
+        ]
+    },
+    "CF3005.1.1": {
+        "requirement": "The CF-channel cFE-SB Message IDs shall be specified in a CF configuration table.",
+        "matches": [
+            {
+                "name": "ChannelConfig",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4635
+            }
+        ]
+    },
+    "CF3006": {
+        "requirement": "The PDU output rate shall be controllable from outside the CF Application.",
+        "matches": [
+            {
+                "name": "ChannelConfig",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.328
+            }
+        ]
+    },
+    "CF3007": {
+        "requirement": "While there are multiple transactions in the playback-pending queue for a given channel, CF shall wait for the \"EOF Sent\" marker on the file currently being played back before starting playback for the next file in the queue.",
+        "matches": [
+            {
+                "name": "DisableDequeueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5175
+            },
+            {
+                "name": "EnableDequeueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5157
+            }
+        ]
+    },
+    "CF3008": {
+        "requirement": "While there is no playback in progress, CF shall check the playback-pending channel queue for files at the configuration-table-defied frequency.",
+        "matches": [
+            {
+                "name": "DisableDequeueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4375
+            }
+        ]
+    },
+    "CF3009": {
+        "requirement": "The CF channel playback-pending-queue depth shall be configurable.",
+        "matches": [
+            {
+                "name": "ChannelConfig",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4549
+            }
+        ]
+    },
+    "CF3010": {
+        "requirement": "The CF file-transfer history-queue depth shall be configurable.",
+        "matches": [
+            {
+                "name": "WriteQueueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5358
+            },
+            {
+                "name": "EnableDequeueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5077
+            }
+        ]
+    },
+    "CF4000": {
+        "requirement": "The number of CF channels shall be defined by a CF configuration table.",
+        "matches": [
+            {
+                "name": "ChannelConfig",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5338
+            }
+        ]
+    },
+    "CF4000.1": {
+        "requirement": "CF-channel parameters shall be defined by a CF configuration table.",
+        "matches": [
+            {
+                "name": "GetParamCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5682
+            },
+            {
+                "name": "ChannelConfig",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.566
+            },
+            {
+                "name": "SetParamCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.554
+            },
+            {
+                "name": "SetParam_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5382
+            },
+            {
+                "name": "GetParam_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5139
+            }
+        ]
+    },
+    "CF4000.1.1": {
+        "requirement": "The \"CF Configuration Table\" shall include the following parameters:\n-- Engine parameter(s)\n1. Local entity ID\n-- Channel parameters (per-channel)\n2. Dequeue Enable \n3. Transmit PDU MID\n4. Receive PDU MID\n5. Handshake Semaphore Name\n6. Acknowledge timer limit\n7. Non-acknowledge timer limit\n8. Acknowledge retry limit\n9. Non-acknowledge retry limit\n10. Inactivity timer limit\n-- Polling Directory Parameters (per-polling directory)\n11. Enable State\n12. CFDP Class\n13. Priority\n14. Source Path\n15. Destination Path\n16. Peer Entity Id",
+        "matches": [
+            {
+                "name": "ChannelConfig",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6071
+            },
+            {
+                "name": "PollDir",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5864
+            },
+            {
+                "name": "ConfigTable",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5436
+            },
+            {
+                "name": "CFDP",
+                "package": "CF.edsl",
+                "kind": "enum",
+                "score": 0.5157
+            },
+            {
+                "name": "GetSet_ValueID",
+                "package": "CF.edsl",
+                "kind": "enum",
+                "score": 0.5102
+            }
+        ]
+    },
+    "CF4000.2": {
+        "requirement": "Each CF channel shall have a dedicated and independent pending queue.",
+        "matches": [
+            {
+                "name": "EnableDequeueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4668
+            }
+        ]
+    },
+    "CF4001": {
+        "requirement": "When CF receives an \"Enable Polling\" command, CF shall enable poll-directory processing.",
+        "matches": [
+            {
+                "name": "PollDir",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6713
+            },
+            {
+                "name": "EnableDirPollingCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6115
+            },
+            {
+                "name": "DisableDirPollingCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5513
+            }
+        ]
+    },
+    "CF4001.1": {
+        "requirement": "CF Polling Directories shall be polled for files at the configuration-table-defined frequency.",
+        "matches": [
+            {
+                "name": "PollDir",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.7185
+            },
+            {
+                "name": "EnableDirPollingCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5505
+            },
+            {
+                "name": "ChannelConfig",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.534
+            }
+        ]
+    },
+    "CF4001.2.1": {
+        "requirement": "CF shall send all files in the polling directory at the configuration-table-specified priority level.",
+        "matches": [
+            {
+                "name": "PollDir",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6533
+            },
+            {
+                "name": "EnableDirPollingCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5673
+            },
+            {
+                "name": "ChannelConfig",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.52
+            },
+            {
+                "name": "DisableDirPollingCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5166
+            }
+        ]
+    },
+    "CF4001.3": {
+        "requirement": "When CF receives a \"Disable Polling\" command, CF shall disable poll-directory processing.",
+        "matches": [
+            {
+                "name": "DisableDirPollingCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6232
+            },
+            {
+                "name": "PollDir",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6071
+            },
+            {
+                "name": "EnableDirPollingCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5255
+            }
+        ]
+    },
+    "CF5000": {
+        "requirement": "When CF receives a \"Freeze Channel\" command, CF shall disable the command-specified channel.",
+        "matches": [
+            {
+                "name": "FreezeCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6452
+            },
+            {
+                "name": "DisableDequeueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5362
+            },
+            {
+                "name": "ThawCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5193
+            },
+            {
+                "name": "DisableEngineCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5065
+            }
+        ]
+    },
+    "CF5000.1": {
+        "requirement": "When CF receives a \"Freeze Channel\" command, CF shall pause all in-progress transactions for the command-specified channel.",
+        "matches": [
+            {
+                "name": "FreezeCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6917
+            },
+            {
+                "name": "ThawCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5473
+            },
+            {
+                "name": "DisableDequeueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5257
+            }
+        ]
+    },
+    "CF5000.2": {
+        "requirement": "While a channel is frozen, when a new transaction is received for that channel, CF shall not process that transaction.",
+        "matches": [
+            {
+                "name": "FreezeCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5948
+            }
+        ]
+    },
+    "CF5001": {
+        "requirement": "When CF receives a \"Thaw Channel\" command, CF shall re-enable the command-specified channel.",
+        "matches": [
+            {
+                "name": "ThawCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.638
+            },
+            {
+                "name": "FreezeCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5112
+            }
+        ]
+    },
+    "CF5001.1": {
+        "requirement": "When CF receives a \"Thaw Channel\" command, CF shall resume processing all paused transactions for the command-specified channel.",
+        "matches": [
+            {
+                "name": "ThawCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.7009
+            },
+            {
+                "name": "FreezeCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6463
+            },
+            {
+                "name": "ResumeCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5877
+            },
+            {
+                "name": "DisableDequeueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5248
+            },
+            {
+                "name": "SuspendCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5166
+            }
+        ]
+    },
+    "CF5002": {
+        "requirement": "The following parameters shall be configurable by a CF command:\n1. CFDP channel Ack-Timer Value (seconds)\n2. CFDP channel NAK-Timer Value (seconds)  \n3. CFDP channel Inactivity-Timeout Value (seconds) \n4. CFDP channel Maximum Ack Timeouts (integer counts)\n5. CFDP channel Maximum NAK Timeouts (integer counts)",
+        "matches": [
+            {
+                "name": "ChannelConfig",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5481
+            }
+        ]
+    },
+    "CF5002.1": {
+        "requirement": "The default values for the CFDP channel protocol parameters below shall be defined by a CF Configuration Table:\n1. CFDP channel Ack-Timer Value (seconds)\n2. CFDP channel NAK-Timer Value (seconds)  \n3. CFDP channel Inactivity-Timeout Value (seconds) \n4. CFDP channel Maximum Ack Timeouts (integer counts)\n5. CFDP channel Maximum NAK Timeouts (integer counts)",
+        "matches": [
+            {
+                "name": "ChannelConfig",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5989
+            },
+            {
+                "name": "GetSet_ValueID",
+                "package": "CF.edsl",
+                "kind": "enum",
+                "score": 0.5062
+            }
+        ]
+    },
+    "CF5002.2": {
+        "requirement": "When CF receives a \"Set CFDP Channel Protocol Configuration\" command, CF shall set the command-specified parameter to the command-specified value and issue a cFE event message that confirms the change.",
+        "matches": [
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.525
+            },
+            {
+                "name": "SetParamCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5181
+            }
+        ]
+    },
+    "CF5002.3": {
+        "requirement": "When CF receives a \"Set CFDP Channel Protocol Configuration\" command,  if the command-specified parameter is invalid, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.493
+            }
+        ]
+    },
+    "CF5002.4": {
+        "requirement": "When CF receives a \"Set CFDP Channel Protocol Configuration\" command,  if the command-specified parameter *value* is invalid, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4848
+            }
+        ]
+    },
+    "CF5003": {
+        "requirement": "When CF receives a \"Get CFDP Channel-Protocol Configuration Parameter\" command, CF shall issue an event message containing the current value of the command-specified configuration-table parameter.",
+        "matches": [
+            {
+                "name": "GetParamCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.582
+            },
+            {
+                "name": "GetParam_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5198
+            },
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5142
+            }
+        ]
+    },
+    "CF5003.1": {
+        "requirement": "When CF receives a \"Get CFDP Channel-Protocol Configuration Parameter\" command, if the command-specified parameter is invalid, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "GetParamCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5134
+            }
+        ]
+    },
+    "CF5004": {
+        "requirement": "When CF receives a \"Get Full CFDP Channel-Protocol Configuration\" command, CF shall publish all CFDP Channel Protocol Configuration parameters to a cFS-SB message.",
+        "matches": [
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5409
+            },
+            {
+                "name": "GetParamCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5236
+            }
+        ]
+    },
+    "CF5005": {
+        "requirement": "When CF receives a \"Cancel Transaction\" command, CF shall cancel the transaction indicated by the command-specified Entity ID and transaction-sequence number.",
+        "matches": [
+            {
+                "name": "CancelCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6792
+            },
+            {
+                "name": "AbandonCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5376
+            },
+            {
+                "name": "SuspendCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5359
+            }
+        ]
+    },
+    "CF5005.1": {
+        "requirement": "When CF receives a \"Cancel Transaction\" command, if the command-specified transaction is not in progress, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "CancelCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6056
+            },
+            {
+                "name": "AbandonCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5136
+            }
+        ]
+    },
+    "CF5006": {
+        "requirement": "When CF receives an \"Abandon Transaction\" command, CF shall abandon the command-specified transaction.",
+        "matches": [
+            {
+                "name": "AbandonCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6692
+            },
+            {
+                "name": "CancelCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5301
+            }
+        ]
+    },
+    "CF5006.1": {
+        "requirement": "When CF receives an \"Abandon Transaction\" command, if the command-specified transaction is not in progress, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "AbandonCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6551
+            },
+            {
+                "name": "CancelCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5227
+            }
+        ]
+    },
+    "CF5007": {
+        "requirement": "When CF receives an \"Abandon All Transactions\" command, CF shall abandon all transactions.",
+        "matches": [
+            {
+                "name": "AbandonCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5863
+            }
+        ]
+    },
+    "CF5007.1": {
+        "requirement": "When CF receives an \"Abandon All Transactions\" command, if there are no transactions in progress, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "AbandonCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5814
+            },
+            {
+                "name": "PurgeQueueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5163
+            }
+        ]
+    },
+    "CF5009": {
+        "requirement": "When CF receives a \"Write Active Transactions\" command, CF shall write all active transactions to a file.",
+        "matches": [
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5026
+            },
+            {
+                "name": "WriteQueue_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5025
+            }
+        ]
+    },
+    "CF5012": {
+        "requirement": "The CF maximum-uplink PDU size shall be defined and configured at compile time.",
+        "matches": [
+            {
+                "name": "ConfigTable",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.3524
+            }
+        ]
+    },
+    "CF5013": {
+        "requirement": "The CF maximum number of simultaneous per-channel transactions shall be defined and configured at compile time.",
+        "matches": [
+            {
+                "name": "ChannelConfig",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5974
+            }
+        ]
+    },
+    "CF5014": {
+        "requirement": "The CF maximum per-channel downlink-PDU size shall be defined and configured at compile time.",
+        "matches": [
+            {
+                "name": "ChannelConfig",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4445
+            }
+        ]
+    },
+    "CF5015": {
+        "requirement": "When CF receives a \"Cancel All Transactions\" command, CF shall cancel all in-progress transactions.",
+        "matches": [
+            {
+                "name": "CancelCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5751
+            },
+            {
+                "name": "PurgeQueueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5647
+            }
+        ]
+    },
+    "CF5015.1": {
+        "requirement": "When CF receives \"Cancel *All* Transactions\" command, if there are no transactions in progress, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "CancelCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5614
+            },
+            {
+                "name": "PurgeQueueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5508
+            },
+            {
+                "name": "AbandonCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5225
+            }
+        ]
+    },
+    "CF5016": {
+        "requirement": "When CF receives a \"Suspend Transaction\" command, if the command-specified transaction is not in progress, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "SuspendCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6334
+            },
+            {
+                "name": "ResumeCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.523
+            },
+            {
+                "name": "CancelCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5137
+            },
+            {
+                "name": "DisableEngineCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5066
+            }
+        ]
+    },
+    "CF5016.1": {
+        "requirement": "When CF receives a \"Suspend Transaction\" command, if the command-specified transaction is not in progress, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "SuspendCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6334
+            },
+            {
+                "name": "ResumeCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.523
+            },
+            {
+                "name": "CancelCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5137
+            },
+            {
+                "name": "DisableEngineCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5066
+            }
+        ]
+    },
+    "CF5017": {
+        "requirement": "When CF receives a \"Suspend All Transactions\" command, CF shall suspend all in-progress transactions.",
+        "matches": [
+            {
+                "name": "SuspendCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5823
+            },
+            {
+                "name": "DisableEngineCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5263
+            },
+            {
+                "name": "PurgeQueueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5247
+            },
+            {
+                "name": "FreezeCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5096
+            }
+        ]
+    },
+    "CF5017.1": {
+        "requirement": "When CF receives a \"Suspend All Transactions\" command, if no transactions are in progress, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "SuspendCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5695
+            },
+            {
+                "name": "DisableEngineCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5411
+            },
+            {
+                "name": "PurgeQueueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5206
+            }
+        ]
+    },
+    "CF5018": {
+        "requirement": "When CF receives a \"Resume Transaction\" command, CF shall resume the command-specified suspended transaction",
+        "matches": [
+            {
+                "name": "ResumeCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.7288
+            },
+            {
+                "name": "SuspendCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6364
+            },
+            {
+                "name": "FreezeCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5151
+            }
+        ]
+    },
+    "CF5018.1": {
+        "requirement": "When CF receives a \"Resume Transaction\" command, if the command-specified transaction is not suspended, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "ResumeCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6226
+            },
+            {
+                "name": "SuspendCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6043
+            },
+            {
+                "name": "CancelCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5013
+            }
+        ]
+    },
+    "CF5019": {
+        "requirement": "When CF receives a \"Resume *All* Transactions\", CF shall resume all suspended transactions",
+        "matches": [
+            {
+                "name": "ResumeCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6351
+            },
+            {
+                "name": "SuspendCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5262
+            }
+        ]
+    },
+    "CF5019.1": {
+        "requirement": "When CF receives a \"Resume ALL Transactions\", if there are no suspended transactions, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "ResumeCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5889
+            },
+            {
+                "name": "SuspendCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5508
+            },
+            {
+                "name": "PurgeQueueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5157
+            }
+        ]
+    },
+    "CF5020": {
+        "requirement": "When CF receives a \"Purge Queue\" command, CF shall purge the command-specified queue for the command-specified output channel.",
+        "matches": [
+            {
+                "name": "PurgeQueueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5804
+            }
+        ]
+    },
+    "CF5020.1": {
+        "requirement": "When CF receives a \"Purge Queue\" command, if the command-specified queue is not defined, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "PurgeQueueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5678
+            }
+        ]
+    },
+    "CF5020.2": {
+        "requirement": "When CF receives a \"Purge Queue\" command, if the command-specified channel is not defined, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "PurgeQueueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.541
+            },
+            {
+                "name": "DisableDequeueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5248
+            }
+        ]
+    },
+    "CF5021": {
+        "requirement": "When CF receives a \"Write Queue\" command, CF shall write the command-specified queue's contents to the command-specified file.",
+        "matches": [
+            {
+                "name": "WriteQueueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.7229
+            },
+            {
+                "name": "WriteQueue_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6837
+            },
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5315
+            },
+            {
+                "name": "EnableDequeueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5277
+            },
+            {
+                "name": "WriteMapInfoCmd",
+                "package": "CFE_SB.edsl",
+                "kind": "container",
+                "score": 0.508
+            }
+        ]
+    },
+    "CF5021.1": {
+        "requirement": "When CF receives a \"Write Queue\" command, if the command-specified queue is not defined, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "WriteQueueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5487
+            },
+            {
+                "name": "WriteQueue_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5234
+            }
+        ]
+    },
+    "CF5022": {
+        "requirement": "When CF receives a \"De-Queue File\" command, CF shall remove the command-specified file from its current queue.",
+        "matches": [
+            {
+                "name": "DisableDequeueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.611
+            },
+            {
+                "name": "PurgeQueueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5996
+            },
+            {
+                "name": "EnableDequeueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5868
+            },
+            {
+                "name": "WriteQueueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5152
+            }
+        ]
+    },
+    "CF5022.1": {
+        "requirement": "When CF receives a \"De-Queue File\" command, if the command-specified file is not found, CF shall reject the command.",
+        "matches": [
+            {
+                "name": "DisableDequeueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5569
+            },
+            {
+                "name": "EnableDequeueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.533
+            }
+        ]
+    },
+    "CF5023": {
+        "requirement": "The maximum number of transmissions, that is, the sum of simultaneous transmit and receive transactions, shall be defined at compile time.",
+        "matches": [
+            {
+                "name": "ChannelConfig",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5174
+            }
+        ]
+    },
+    "CF5024": {
+        "requirement": "When CF receives a file-transfer request, if the requested file's size is larger than 2^32 bytes, CF shall reject the request and issue an error event message.",
+        "matches": [
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4761
+            }
+        ]
+    },
+    "CF5025": {
+        "requirement": "When CF receives a PDU, if the size of the Entity ID fields are too large for the configured internal storage, CF shall reject the PDU and issue an error event message.",
+        "matches": [
+            {
+                "name": "CFDP",
+                "package": "CF.edsl",
+                "kind": "enum",
+                "score": 0.3619
+            }
+        ]
+    },
+    "CF5026": {
+        "requirement": "When CF receives a PDU, if the size of the Transaction Sequence Number field is too large for the configured internal storage, CF shall reject the PDU and issue an error event message.",
+        "matches": [
+            {
+                "name": "CFDP",
+                "package": "CF.edsl",
+                "kind": "enum",
+                "score": 0.3682
+            }
+        ]
+    },
+    "CF5030": {
+        "requirement": "Each CF output channel shall have 256 file-transfer priority levels.",
+        "matches": [
+            {
+                "name": "ChannelConfig",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6324
+            },
+            {
+                "name": "ConfigTable",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5499
+            }
+        ]
+    },
+    "CF5030.1": {
+        "requirement": "The CF file transmission priority level for each polling directory shall be configurable.",
+        "matches": [
+            {
+                "name": "PollDir",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.7321
+            },
+            {
+                "name": "ChannelConfig",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.6306
+            },
+            {
+                "name": "EnableDirPollingCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5916
+            },
+            {
+                "name": "DisableDirPollingCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5726
+            },
+            {
+                "name": "EnableDequeueCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5103
+            }
+        ]
+    },
+    "CF5030.2": {
+        "requirement": "The highest file-transfer priority level shall be zero.",
+        "matches": [
+            {
+                "name": "ChannelConfig",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5285
+            },
+            {
+                "name": "QosPriority",
+                "package": "CFE_SB.edsl",
+                "kind": "enum",
+                "score": 0.5276
+            }
+        ]
+    },
+    "CF5031": {
+        "requirement": "CF shall send NAK re-transmissions in the order received at the same priority as the NAK-targeted file",
+        "matches": [
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4916
+            }
+        ]
+    },
+    "CF5040": {
+        "requirement": "CF shall support CFDP file transfers in \"Unacknowledged\"(Class-1) Service Mode.",
+        "matches": [
+            {
+                "name": "CFDP",
+                "package": "CF.edsl",
+                "kind": "enum",
+                "score": 0.6371
+            },
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5553
+            }
+        ]
+    },
+    "CF5041": {
+        "requirement": "CF shall support CFDP file transfer in \"Acknowledged\" (Class-2) Service, Mode.",
+        "matches": [
+            {
+                "name": "CFDP",
+                "package": "CF.edsl",
+                "kind": "enum",
+                "score": 0.6621
+            },
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.585
+            },
+            {
+                "name": "EnableEngineCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.506
+            }
+        ]
+    },
+    "CF6000": {
+        "requirement": "The CF Housekeeping message shall include\n1. Command Counter\n2. Command Error Counter\n-- Per-Channel HouseKeeping Entries\n4. Number of transactions on the various queues\n5. Frozen Status\n6. Number of Valid PDUs Received\n7. Number of Receive-Transaction Errors\n8. Number of Sent PDUs \n9. Number of Acknowledge Retry Limit Exceeded Faults\n10. Number of Non-Acknowledge Retry Limit Exceeded Faults\n11. Number of Inactivity Timer-Limit Faults\n12. Number of CRC Mismatch Faults\n13. Number of Filestore Rejection Faults (can be split by type)\n14. Number of Filesize Mismatch Faults",
+        "matches": [
+            {
+                "name": "HkCounters",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5581
+            },
+            {
+                "name": "HkFault",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5254
+            }
+        ]
+    },
+    "CF6001": {
+        "requirement": "The CF End of Transaction message shall include\n1. Transaction identifier\n2. Channel number\n3. Direction of transaction\n4. Filenames associated with transaction\n5. Transaction state\n6. Condition code\n7. Source EID of transaction\n8. Peer EID of transaction\n9. File size\n10. CRC state",
+        "matches": [
+            {
+                "name": "EotPacket_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5508
+            },
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5332
+            },
+            {
+                "name": "Transaction_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5255
+            },
+            {
+                "name": "ChannelConfig",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5215
+            }
+        ]
+    },
+    "CF6001.1": {
+        "requirement": "When a transaction terminates, CF shall generate an End of Transaction information packet",
+        "matches": [
+            {
+                "name": "EotPacket",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.5233
+            }
+        ]
+    },
+    "CF6001.2": {
+        "requirement": "If a transaction has reached the FIN or EOF state, the CF End of Transaction message Condition Code shall be set to the CFDP condition code for that transaction.",
+        "matches": [
+            {
+                "name": "TxFile_Payload",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4487
+            }
+        ]
+    },
+    "CF6001.3": {
+        "requirement": "If the transaction has not reached the FIN or EOF state, the CF End of Transaction message Condition Code shall indicate why the transaction stopped early.",
+        "matches": [
+            {
+                "name": "AbandonCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4127
+            }
+        ]
+    },
+    "CF7000": {
+        "requirement": "When CF is initialized, CF shall initialize the the housekeeping counters/numbers to zero and the frozen status as \"thawed\".",
+        "matches": [
+            {
+                "name": "ThawCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.3841
+            }
+        ]
+    },
+    "CF7001": {
+        "requirement": "When CF is initialized, CF shall load valid CF Configuration Tables.",
+        "matches": [
+            {
+                "name": "DumpRegistryCmd",
+                "package": "CFE_TBL.edsl",
+                "kind": "container",
+                "score": 0.4426
+            }
+        ]
+    },
+    "CF7001.1": {
+        "requirement": "If a CF Configuration Table fails validation, CF shall issue an error cFE event message and exit.",
+        "matches": [
+            {
+                "name": "ValidateCmd",
+                "package": "CFE_TBL.edsl",
+                "kind": "container",
+                "score": 0.4539
+            }
+        ]
+    },
+    "CF7001.1.1": {
+        "requirement": "CF shall validate CF configuration table parameters.",
+        "matches": [
+            {
+                "name": "ConfigTable",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4698
+            }
+        ]
+    },
+    "CF8000": {
+        "requirement": "When CF receives an \"Initialize Engine\" command, CF shall enable the CFDP engine and re-load its configuration.",
+        "matches": [
+            {
+                "name": "EnableEngineCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.4165
+            }
+        ]
+    },
+    "CF8001": {
+        "requirement": "When CF receives a \"Disable Engine\" command, CF shall disable the CFDP engine and reset its state.",
+        "matches": [
+            {
+                "name": "DisableEngineCmd",
+                "package": "CF.edsl",
+                "kind": "container",
+                "score": 0.51
+            }
+        ]
+    }
+}

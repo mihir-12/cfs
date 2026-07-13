@@ -1,0 +1,12 @@
+# Secrets
+.env
+
+# LLM description cache
+descriptions_cache.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.edsl
+*.csv

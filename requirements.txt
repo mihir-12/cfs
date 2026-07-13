@@ -1,0 +1,5 @@
+sentence-transformers
+scikit-learn
+pandas
+google-genai
+python-dotenv
