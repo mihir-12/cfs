@@ -1,0 +1,99 @@
+{
+    "CF1000": {
+        "requirement": "When CF receives a \"No-Op\" command, CF shall increment the \"CF Valid-Command Counter\" and issue a cFE event message.",
+        "matches": [
+            {
+                "name": "NoopCmd",
+                "package": "CF.edsl",
+                "kind": "container"
+            },
+            {
+                "name": "HKCommandCounters",
+                "package": "CF.edsl",
+                "kind": "container",
+                "fields_referenced": [
+                    "cmd"
+                ]
+            }
+        ],
+        "notes": "No EDSL construct models the cFE event message; event messages are not represented as data types in these files."
+    },
+
+    "CF2002.1.2": {
+        "requirement": "CF shall detect the following scenarios and identify them as faults:\n1. Positive Ack Limit Reached\n2. Filestore Rejection\n3. File-CRC Mismatch Failure\n4. File-Size Error\n5. NAK Limit Reached\n6. Inactivity Limit Reached",
+        "matches": [
+            {
+                "name": "HkFault",
+                "package": "CF.edsl",
+                "kind": "container",
+                "fields_referenced": [
+                    "ack_limit",
+                    "file_open",
+                    "file_read",
+                    "file_seek",
+                    "file_write",
+                    "file_rename",
+                    "directory_read",
+                    "crc_mismatch",
+                    "file_size_mismatch",
+                    "nak_limit",
+                    "inactivity_timer"
+                ]
+            }
+        ]
+    },
+
+    "CF4001": {
+        "requirement": "When CF receives an \"Enable Polling\" command, CF shall enable poll-directory processing.",
+        "matches": [
+            {
+                "name": "EnableDirPollingCmd",
+                "package": "CF.edsl",
+                "kind": "container"
+            },
+            {
+                "name": "PollDir",
+                "package": "CF.edsl",
+                "kind": "container",
+                "fields_referenced": [
+                    "enabled"
+                ]
+            },
+            {
+                "name": "EnableFlag",
+                "package": "CF.edsl",
+                "kind": "enum",
+                "members_referenced": [
+                    "YES"
+                ]
+            }
+        ]
+    },
+    
+    "CF4001.3": {
+        "requirement": "When CF receives a \"Disable Polling\" command, CF shall disable poll-directory processing.",
+        "matches": [
+            {
+                "name": "DisableDirPollingCmd",
+                "package": "CF.edsl",
+                "kind": "container"
+            },
+            {
+                "name": "PollDir",
+                "package": "CF.edsl",
+                "kind": "container",
+                "fields_referenced": [
+                    "enabled"
+                ]
+            },
+            {
+                "name": "EnableFlag",
+                "package": "CF.edsl",
+                "kind": "enum",
+                "members_referenced": [
+                    "NO"
+                ]
+            }
+        ]
+    }
+}

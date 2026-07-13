@@ -1,0 +1,4 @@
+CF1000 should map to HKCommadCounters.cmd
+CF1001 should map to HKCommandCounters.cmd
+CF1002 should map to SuspendCmd
+CF1004.2 should match to SuspendCmd
