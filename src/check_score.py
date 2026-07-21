@@ -10,7 +10,7 @@ from main import CACHE_DIR, DATA_DIR, load_requirements
 """
 
 def check_score(element_name, requirement_id, package=None):
-    model = SentenceTransformer("all-MiniLM-L6-v2", cache_folder = CACHE_DIR)
+    model = SentenceTransformer("all-mpnet-base-v2", cache_folder = CACHE_DIR)
     requirements = load_requirements()
     target_req = next((r for r in requirements if r["id"] == requirement_id), None)
     if not target_req:
@@ -46,4 +46,4 @@ def check_score(element_name, requirement_id, package=None):
     return scores[target_idx]
 
 if __name__ == "__main__":
-    check_score("HKCommandCounters", "CF1000")
+    check_score("AbandonCmd", "CF1002")

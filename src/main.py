@@ -2,8 +2,8 @@
 
 Matches each CF functional requirement against the elements of the EDSL model
 (containers, enums, and interfaces) using sentence-transformer embeddings and
-cosine similarity. For every requirement it reports the design elements that are
-most likely to implement it.
+cosine similarity, then LLM-filters candidates and reports fields / extracted
+variables for the kept matches.
 
 - cFS: NASA Core Flight System (open-source flight software framework)
 - CF: the CFDP file-transfer application within cFS
@@ -22,10 +22,10 @@ from edsl_parser import Container, EdslElement, Enum, Interface, build_descripto
 from llm_descriptions import create_ai_generated_descriptions
 from reference_selection import reference_key, select_references
 
-# Minimum cosine similarity for a match; always keep at least the single best.
+# Minimum cosine similarity for a candidate; always keep at least the single best.
 THRESHOLD = 0.4
-# Maximum number of design elements reported per requirement.
-TOP_N = 5
+# Cosine candidate pool size before the LLM relevance filter.
+CANDIDATE_N = 10
 
 SRC_DIR = Path(__file__).resolve().parent
 ROOT = SRC_DIR.parent
@@ -50,7 +50,7 @@ def load_requirements() -> list[dict]:
 
 def main() -> None:
     load_dotenv(ROOT / ".env")
-    model = SentenceTransformer("all-mpnet-base-v2", cache_folder = CACHE_DIR)
+    model = SentenceTransformer("all-mpnet-base-v2", cache_folder=CACHE_DIR)
 
     requirements = load_requirements()
     requirement_texts = [r["text"] for r in requirements]
@@ -65,7 +65,8 @@ def main() -> None:
     # rows = requirements, columns = EDSL elements
     scores = cosine_similarity(requirement_embeddings, descriptor_embeddings)
 
-    req_matches: list[tuple[dict, list[float], list[int]]] = []
+    # Cosine candidates (wider pool); LLM relevance filter decides final matches.
+    req_candidates: list[tuple[dict, list[float], list[int]]] = []
     for req, row in zip(requirements, scores):
         ranked = sorted(range(len(elements)), key=lambda j: row[j], reverse=True)
         ranked_deduplicated = []
@@ -75,30 +76,45 @@ def main() -> None:
         for j in ranked:
             if elements[j].name not in seen_edsl_elements:
                 seen_edsl_elements.add(elements[j].name)
-                ranked_deduplicated.append(j) 
+                ranked_deduplicated.append(j)
 
-        matches = [j for j in ranked_deduplicated if row[j] >= THRESHOLD][:TOP_N]
-        if not matches:  # always retain the single best match
-            matches = ranked_deduplicated[:1]
-        req_matches.append((req, row, matches))
+        candidates = [j for j in ranked_deduplicated if row[j] >= THRESHOLD][:CANDIDATE_N]
+        if not candidates:  # always retain the single best match
+            candidates = ranked_deduplicated[:1]
+        req_candidates.append((req, row, candidates))
 
-    # Ask the LLM which specific fields/members/commands each matched element a
-    # requirement is actually about, so it can be reported the same way
-    # manual_mapping.json is (fields_referenced / members_referenced / ...).
-    pairs: list[tuple[str, str, EdslElement]] = []
-    for req, _row, matches in req_matches:
-        for j in matches:
-            element = elements[j]
-            if element.get_contained_names():
-                pairs.append((req["id"], req["text"], element))
-    references = select_references(
-        pairs, cache_path=CACHE_DIR / "reference_selection_cache.json"
+    req_match_payloads: list[tuple[str, str, list[EdslElement]]] = []
+    for req, _row, candidates in req_candidates:
+        candidate_elements = [elements[j] for j in candidates]
+        req_match_payloads.append((req["id"], req["text"], candidate_elements))
+    selection = select_references(
+        req_match_payloads, cache_path=CACHE_DIR / "reference_selection_cache.json"
     )
 
     traceability: dict[str, dict] = {}
-    for req, row, matches in req_matches:
+    for req, row, candidates in req_candidates:
+        candidate_elements = [elements[j] for j in candidates]
+        name_to_idx = {elements[j].name: j for j in candidates}
+        selected = selection.get(
+            reference_key(req["id"], req["text"], candidate_elements),
+            {"relevant_matches": [], "references": {}, "extracted_variables": []},
+        )
+        relevant_names = selected.get("relevant_matches") or []
+        # Fall back to top cosine candidate if the LLM kept nothing valid.
+        if not relevant_names:
+            relevant_names = [elements[candidates[0]].name]
+
+        # Final matches: relevant subset, ordered by cosine score descending.
+        kept_indices = [
+            name_to_idx[name] for name in relevant_names if name in name_to_idx
+        ]
+        kept_indices.sort(key=lambda j: row[j], reverse=True)
+
+        references_by_element = selected.get("references") or {}
+        extracted_variables = selected.get("extracted_variables") or []
+
         match_dicts = []
-        for j in matches:
+        for j in kept_indices:
             element = elements[j]
             match_dict = {
                 "name": element.name,
@@ -107,7 +123,7 @@ def main() -> None:
                 "ai_generated_desc": element.ai_generated_desc,
                 "cosine_similarity_score": round(float(row[j]), 4),
             }
-            referenced = references.get(reference_key(req["id"], element), [])
+            referenced = references_by_element.get(element.name, [])
             if referenced:
                 if isinstance(element, Container):
                     match_dict["fields_referenced"] = referenced
@@ -127,6 +143,7 @@ def main() -> None:
         traceability[req["id"]] = {
             "requirement": req["text"],
             "matches": match_dicts,
+            "extracted_variables": extracted_variables,
         }
 
     with (ROOT / "traceability.json").open("w", encoding="utf-8") as f:

@@ -1,13 +1,9 @@
-"""Select which fields/members/commands of a matched EDSL element a requirement is about.
+"""Select relevant matches, per-element references, and extracted variables.
 
-Given a requirement and a container/enum/interface element that semantic
-similarity has already matched to it, asks Gemini to point out the specific
-fields, members, commands, or parameters that the requirement is actually
-about -- mirroring the `fields_referenced` / `members_referenced` /
-`commands_referenced` / `parameters_referenced` shape used in
-`manual_mapping.json`. Results are cached to disk keyed by a hash of the
-requirement id and the element's source, so reruns are free and only new or
-changed requirement-element pairs trigger an API call.
+For each requirement and its cosine candidate EDSL elements, asks Gemini to
+(0) filter to relevant matches, (1) extract phrases from the requirement,
+(2) pick contained names of kept elements, and (3) map phrases to
+Element / Element.member paths. Results are cached per requirement.
 """
 
 from __future__ import annotations
@@ -18,6 +14,7 @@ import os
 import re
 import time
 from pathlib import Path
+from typing import Any
 
 from dotenv import load_dotenv
 from google import genai
@@ -27,42 +24,158 @@ from edsl_parser import EdslElement
 
 DEFAULT_CACHE = "reference_selection_cache.json"
 DEFAULT_MODEL = "gemini-flash-latest"
-BATCH_SIZE = 20
+BATCH_SIZE = 10
 MAX_RETRIES = 5
 
+# One requirement + all its candidate elements per prompt item.
+ReqMatch = tuple[str, str, list[EdslElement]]  # (req_id, req_text, candidates)
+
 _PROMPT_HEADER = """\
-You are tracing NASA cFS/CF (CCSDS File Delivery Protocol) requirements to the \
-specific fields, enum members, commands, or parameters of the design elements \
-they have already been matched to.
+You are tracing NASA cFS/CF (CCSDS File Delivery Protocol) requirements to \
+the EDSL design model.
 
-For each item below, a requirement is paired with a container, enum, or \
-interface it was matched to. Identify which of that element's contained names \
-the requirement is SPECIFICALLY about -- not every name present, only the ones \
-the requirement text calls out or clearly implies. If none stand out \
-individually (the requirement matches the element as a whole), return an empty \
-list for that item.
+For each item below you are given a requirement and candidate EDSL elements \
+from embedding similarity. Work in this order:
 
-Return ONLY a JSON object mapping each item id (e.g. "item_0") to a list of \
-name strings, using the exact names as they appear in the source.
+0) RELEVANCE — From the candidate list only, choose relevant_matches (exact \
+element names). Keep an element only if the requirement is actually about \
+that construct (command, counter, event, structure, etc.). Discard neighbors \
+that merely share vague domain wording (e.g. a scheduling interface for a \
+No-Op / command-counter requirement).
+
+1) EXTRACT — From the requirement text alone, list notable entities and \
+actions as short phrases (commands, counters, messages, behaviors, etc.). \
+Do not invent EDSL names here; stay close to the requirement wording.
+
+2) REFERENCES — For each element in relevant_matches only, list which of its \
+contained names (fields / members / commands / parameters) the requirement \
+is specifically about. Use exact names from the source / contained-names \
+list. Empty list if none stand out. Do not include references for elements \
+you dropped in step 0.
+
+3) MAP — For each phrase from step 1, set edsl_mapping to zero or more paths \
+drawn only from relevant_matches (and the names from step 2 where \
+relevant). Path format: "Element" or "Element.member". If nothing among the \
+kept matches fits a phrase, keep the phrase and use an empty edsl_mapping list.
+
+Return ONLY a JSON object mapping each item id (e.g. "item_0") to an object:
+{
+  "relevant_matches": ["ElementName", ...],
+  "references": { "<ElementName>": ["containedName", ...], ... },
+  "extracted_variables": [
+    { "name": "<phrase from step 1>", "edsl_mapping": ["Element.member", ...] }
+  ]
+}
 
 Items:
 """
 
 
-def _pair_key(req_id: str, element: EdslElement) -> str:
-    #Builds the hash key for a (requirement, element) pair
-    #hash key gets mapped to the corresponding list of relevant field/member names in the cache
-    digest = hashlib.sha1(f"{req_id}:{element.raw_element_text}".encode("utf-8")).hexdigest()[:10]
-    return f"{req_id}:{element.package}:{element.name}:{digest}"
+def _req_key(req_id: str, req_text: str, elements: list[EdslElement]) -> str:
+    """Cache key for one requirement and its candidate element set."""
+    parts = [f"{req_id}:{req_text}"]
+    for el in sorted(elements, key=lambda e: (e.package, e.name)):
+        parts.append(f"{el.package}:{el.name}:{el.raw_element_text}")
+    digest = hashlib.sha1("\n".join(parts).encode("utf-8")).hexdigest()[:10]
+    return f"{req_id}:{digest}"
 
 
-def _item_block(item_id: str, req_text: str, element: EdslElement) -> str:
-    #returns the block of text for a single item in the prompt
-    return (
-        f"[{item_id}] requirement: {req_text}\n"
-        f"matched {element.kind} (choose only from its {element.names_label}):\n"
-        f"{element.raw_element_text}"
-    )
+def reference_key(req_id: str, req_text: str, elements: list[EdslElement]) -> str:
+    """Public lookup key so callers can read results without reimplementing hashing."""
+    return _req_key(req_id, req_text, elements)
+
+
+def _path_allow_list(elements: list[EdslElement]) -> set[str]:
+    """Valid edsl_mapping paths: Element and Element.member for each element."""
+    allowed: set[str] = set()
+    for el in elements:
+        allowed.add(el.name)
+        for name in el.get_contained_names():
+            allowed.add(f"{el.name}.{name}")
+    return allowed
+
+
+def _element_by_name(elements: list[EdslElement]) -> dict[str, EdslElement]:
+    return {el.name: el for el in elements}
+
+
+def _validate_result(
+    raw: Any, elements: list[EdslElement]
+) -> dict[str, Any]:
+    """Filter LLM output to valid relevant_matches, references, and paths."""
+    name_to_el = _element_by_name(elements)
+    candidate_names = set(name_to_el)
+
+    relevant_matches: list[str] = []
+    if isinstance(raw, dict) and isinstance(raw.get("relevant_matches"), list):
+        seen: set[str] = set()
+        for name in raw["relevant_matches"]:
+            if (
+                isinstance(name, str)
+                and name in candidate_names
+                and name not in seen
+            ):
+                relevant_matches.append(name)
+                seen.add(name)
+
+    if not relevant_matches and elements:
+        # Safety net: keep the first candidate (highest cosine from caller order).
+        relevant_matches = [elements[0].name]
+
+    kept_elements = [name_to_el[n] for n in relevant_matches if n in name_to_el]
+    kept_names = set(relevant_matches)
+    allowed_paths = _path_allow_list(kept_elements)
+
+    references: dict[str, list[str]] = {n: [] for n in relevant_matches}
+    if isinstance(raw, dict) and isinstance(raw.get("references"), dict):
+        for el_name, names in raw["references"].items():
+            if el_name not in kept_names:
+                continue
+            el = name_to_el.get(el_name)
+            if el is None or not isinstance(names, list):
+                continue
+            valid = el.get_contained_names()
+            references[el_name] = [
+                n for n in names if isinstance(n, str) and n in valid
+            ]
+
+    extracted: list[dict[str, Any]] = []
+    raw_extracted = raw.get("extracted_variables") if isinstance(raw, dict) else None
+    if isinstance(raw_extracted, list):
+        for item in raw_extracted:
+            if not isinstance(item, dict):
+                continue
+            name = item.get("name")
+            if not isinstance(name, str) or not name.strip():
+                continue
+            mapping = item.get("edsl_mapping", [])
+            if not isinstance(mapping, list):
+                mapping = []
+            cleaned = [
+                p for p in mapping if isinstance(p, str) and p in allowed_paths
+            ]
+            extracted.append({"name": name.strip(), "edsl_mapping": cleaned})
+
+    return {
+        "relevant_matches": relevant_matches,
+        "references": references,
+        "extracted_variables": extracted,
+    }
+
+
+def _item_block(item_id: str, req_text: str, elements: list[EdslElement]) -> str:
+    sections = [
+        f"[{item_id}] requirement: {req_text}",
+        "",
+        "Candidate elements:",
+    ]
+    for el in elements:
+        contained = ", ".join(sorted(el.get_contained_names())) or "(none)"
+        sections.append(f"--- {el.name} ({el.kind}) ---")
+        sections.append(f"contained names: {contained}")
+        sections.append(el.raw_element_text)
+        sections.append("")
+    return "\n".join(sections).rstrip()
 
 
 def _retry_delay(exc: Exception, attempt: int) -> float:
@@ -74,12 +187,13 @@ def _retry_delay(exc: Exception, attempt: int) -> float:
     return min(2**attempt, 30)
 
 
-def _call_gemini(client, model: str, pairs_batch: list[tuple[str, str, EdslElement]]) -> dict[str, list[str]]:
-    #pairs_batch is a list of (requirement_id, requirement_text, element) tuples - a single batch
-    item_ids = [f"item_{i}" for i in range(len(pairs_batch))]
+def _call_gemini(
+    client, model: str, batch: list[ReqMatch]
+) -> dict[str, dict[str, Any]]:
+    item_ids = [f"item_{i}" for i in range(len(batch))]
     prompt = _PROMPT_HEADER + "\n\n".join(
-        _item_block(item_id, req_text, element)
-        for item_id, (_req_id, req_text, element) in zip(item_ids, pairs_batch)
+        _item_block(item_id, req_text, elements)
+        for item_id, (_req_id, req_text, elements) in zip(item_ids, batch)
     )
 
     last_exc: Exception | None = None
@@ -93,14 +207,12 @@ def _call_gemini(client, model: str, pairs_batch: list[tuple[str, str, EdslEleme
                     temperature=0,
                 ),
             )
-            data = json.loads(response.text) #local item_id is mapped to the list of relevant field/member names for the EdslElement corresponding to the local item_id
-            results: dict[str, list[str]] = {}
-            for item_id, (req_id, _req_text, element) in zip(item_ids, pairs_batch):
-                names = data.get(item_id) #gets the list of relevant names (produced by the LLM) for the element corresponding to the local item_id
-                if not isinstance(names, list):
-                    continue
-                valid = element.get_contained_names()
-                results[_pair_key(req_id, element)] = [n for n in names if n in valid]
+            data = json.loads(response.text)
+            results: dict[str, dict[str, Any]] = {}
+            for item_id, (req_id, req_text, elements) in zip(item_ids, batch):
+                raw = data.get(item_id)
+                validated = _validate_result(raw, elements)
+                results[_req_key(req_id, req_text, elements)] = validated
             return results
         except Exception as exc:  # noqa: BLE001
             last_exc = exc
@@ -121,33 +233,52 @@ def _call_gemini(client, model: str, pairs_batch: list[tuple[str, str, EdslEleme
     raise last_exc  # type: ignore[misc]
 
 
-def reference_key(req_id: str, element: EdslElement) -> str:
-    """Public lookup key so callers can read results without reimplementing hashing."""
-    return _pair_key(req_id, element)
+def _empty_result(elements: list[EdslElement]) -> dict[str, Any]:
+    # Fall back to the top cosine candidate (first in caller-ordered list).
+    relevant = [elements[0].name] if elements else []
+    return {
+        "relevant_matches": relevant,
+        "references": {n: [] for n in relevant},
+        "extracted_variables": [],
+    }
 
 
 def select_references(
-    all_pairs: list[tuple[str, str, EdslElement]],
+    req_matches: list[ReqMatch],
     cache_path: str | Path = DEFAULT_CACHE,
     model: str = DEFAULT_MODEL,
-) -> dict[str, list[str]]:
-    """Return {reference_key(req_id, element) -> [relevant field/member names]}.
+) -> dict[str, dict[str, Any]]:
+    """Return {reference_key(...) -> {relevant_matches, references, extracted_variables}}.
 
-    `all_pairs` is a list of (requirement_id, requirement_text, element) tuples and
-    should already be filtered to elements that actually have contained names to
-    choose from.
+    `req_matches` is a list of (requirement_id, requirement_text, [candidate elements]).
     """
     root = Path(__file__).resolve().parent.parent
     cache_path = Path(cache_path)
     load_dotenv(root / ".env")
 
-    cache: dict[str, list[str]] = {}
+    cache: dict[str, dict[str, Any]] = {}
     if cache_path.exists():
-        with cache_path.open("r", encoding="utf-8") as f:
-            cache = json.load(f)
+        try:
+            with cache_path.open("r", encoding="utf-8") as f:
+                loaded = json.load(f)
+        except json.JSONDecodeError:
+            print(f"Warning: corrupt cache at {cache_path}; starting fresh.")
+            loaded = {}
+        # Require the new relevant_matches key so older cache shapes are ignored.
+        if isinstance(loaded, dict):
+            for key, value in loaded.items():
+                if (
+                    isinstance(value, dict)
+                    and "relevant_matches" in value
+                    and "references" in value
+                ):
+                    cache[key] = value
 
-    # we only need to use the llm to find relevant field/member names for pairs that are not already in the cache
-    uncached = [p for p in all_pairs if _pair_key(p[0], p[2]) not in cache]
+    uncached = [
+        item
+        for item in req_matches
+        if _req_key(item[0], item[1], item[2]) not in cache
+    ]
 
     if uncached:
         api_key = os.environ.get("GEMINI_API_KEY")
@@ -157,22 +288,22 @@ def select_references(
             client = genai.Client(api_key=api_key)
             cache_path.parent.mkdir(parents=True, exist_ok=True)
             for start in range(0, len(uncached), BATCH_SIZE):
-                pairs_batch = uncached[start : start + BATCH_SIZE]
+                batch = uncached[start : start + BATCH_SIZE]
                 try:
-                    results = _call_gemini(client, model, pairs_batch)
-                except Exception as exc:  # noqa: BLE001 - keep pipeline resilient
+                    results = _call_gemini(client, model, batch)
+                except Exception as exc:  # noqa: BLE001
                     print(f"Warning: Gemini call failed for a batch: {exc}")
                     continue
-                cache.update(results) #adds the results to the cache
-                # Persist after each batch so rate-limit interruptions don't lose work.
+                cache.update(results)
                 with cache_path.open("w", encoding="utf-8") as f:
                     json.dump(cache, f, indent=2)
                 print(
                     f"  selected references for {min(start + BATCH_SIZE, len(uncached))}"
-                    f"/{len(uncached)} new pairs"
+                    f"/{len(uncached)} new requirements"
                 )
 
-    return {
-        reference_key(req_id, element): cache.get(reference_key(req_id, element), [])
-        for req_id, _req_text, element in all_pairs
-    }
+    out: dict[str, dict[str, Any]] = {}
+    for req_id, req_text, elements in req_matches:
+        key = _req_key(req_id, req_text, elements)
+        out[key] = cache.get(key) or _empty_result(elements)
+    return out

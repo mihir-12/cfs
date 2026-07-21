@@ -154,8 +154,13 @@ def create_ai_generated_descriptions(
 
     cache: dict[str, str] = {}
     if cache_path.exists():
-        with cache_path.open("r", encoding="utf-8") as f:
-            cache = json.load(f)
+        try:
+            with cache_path.open("r", encoding="utf-8") as f:
+                loaded = json.load(f)
+            if isinstance(loaded, dict):
+                cache = loaded
+        except json.JSONDecodeError:
+            print(f"Warning: corrupt cache at {cache_path}; starting fresh.")
 
     uncached = [el for el in elements if _cache_key(el) not in cache]
 
