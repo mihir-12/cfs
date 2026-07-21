@@ -66,23 +66,23 @@ def _cache_key(element: EdslElement) -> str:
 
 
 def _referenced_context(element: EdslElement, name_to_element_map: dict[str, EdslElement]) -> str:
-    """Takes the enums and containers that the current edsl element wraps, and includes the fields/members of those wrapped enums/containers as context"""
+    """Include one-hop field/member names of composite types this element references."""
     lines: list[str] = []
-    for type_name, _field_name in element.container_fields:
+    for type_name, _field_name in element.get_typed_fields():
         ref = name_to_element_map.get(type_name)
         if ref is None or ref.name == element.name:
             continue
-        if ref.kind == "container" and ref.container_fields:
-            names = ", ".join(n for _, n in ref.container_fields)
-            lines.append(f"  {ref.name} has fields: {names}")
-        elif ref.kind == "enum" and ref.enum_members:
-            lines.append(f"  {ref.name} values: {', '.join(ref.enum_members)}")
+        names = sorted(ref.get_contained_names())
+        if not names:
+            continue
+        lines.append(f"  {ref.name} {ref.names_label}: {', '.join(names)}")
+        # ex. "TxnFilenamess fields: src_filename, dst_filename"
     return "\n".join(lines)
 
 
 def _item_block(item_id: str, element: EdslElement, name_to_element_map: dict) -> str:
     """formats one EDSL element into the chunk of prompt text that gets sent to Gemini for that element."""
-    # to create an ai generated description for an edsl element, we use the local item_id, element kind (enum or container), raw element text/code, and the direct fields/members it references
+    # to create an ai generated description for an edsl element, we use the local item_id, element kind, raw element text/code, and the direct fields/members it references
     block = [f"[{item_id}] kind={element.kind} name={element.name}", element.raw_element_text]
     context = _referenced_context(element, name_to_element_map)
     if context:

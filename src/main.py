@@ -1,7 +1,7 @@
 """Requirements-to-design traceability via semantic similarity.
 
 Matches each CF functional requirement against the elements of the EDSL model
-(containers, their fields, and enums) using sentence-transformer embeddings and
+(containers, enums, and interfaces) using sentence-transformer embeddings and
 cosine similarity. For every requirement it reports the design elements that are
 most likely to implement it.
 
@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from edsl_parser import EdslElement, build_descriptor, parse_directory
+from edsl_parser import Container, EdslElement, Enum, Interface, build_descriptor, parse_directory
 from llm_descriptions import create_ai_generated_descriptions
 from reference_selection import reference_key, select_references
 
@@ -82,16 +82,14 @@ def main() -> None:
             matches = ranked_deduplicated[:1]
         req_matches.append((req, row, matches))
 
-    # Ask the LLM which specific fields/members each matched container/enum a
+    # Ask the LLM which specific fields/members/commands each matched element a
     # requirement is actually about, so it can be reported the same way
-    # manual_mapping.json is (fields_referenced / members_referenced).
+    # manual_mapping.json is (fields_referenced / members_referenced / ...).
     pairs: list[tuple[str, str, EdslElement]] = []
     for req, _row, matches in req_matches:
         for j in matches:
             element = elements[j]
-            has_fields = element.kind == "container" and element.container_fields
-            has_members = element.kind == "enum" and element.enum_members
-            if has_fields or has_members:
+            if element.get_contained_names():
                 pairs.append((req["id"], req["text"], element))
     references = select_references(
         pairs, cache_path=CACHE_DIR / "reference_selection_cache.json"
@@ -111,8 +109,19 @@ def main() -> None:
             }
             referenced = references.get(reference_key(req["id"], element), [])
             if referenced:
-                key = "fields_referenced" if element.kind == "container" else "members_referenced"
-                match_dict[key] = referenced
+                if isinstance(element, Container):
+                    match_dict["fields_referenced"] = referenced
+                elif isinstance(element, Enum):
+                    match_dict["members_referenced"] = referenced
+                elif isinstance(element, Interface):
+                    commands_referenced = [n for n in referenced if n in element.commands]
+                    parameters_referenced = [
+                        n for n in referenced if n in {p.name for p in element.parameters}
+                    ]
+                    if commands_referenced:
+                        match_dict["commands_referenced"] = commands_referenced
+                    if parameters_referenced:
+                        match_dict["parameters_referenced"] = parameters_referenced
             match_dicts.append(match_dict)
 
         traceability[req["id"]] = {

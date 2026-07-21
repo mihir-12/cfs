@@ -1,9 +1,10 @@
-"""Select which fields/members of a matched EDSL element a requirement is about.
+"""Select which fields/members/commands of a matched EDSL element a requirement is about.
 
-Given a requirement and a container/enum element that semantic similarity has
-already matched to it, asks Gemini to point out the specific fields (for a
-container) or members (for an enum) that the requirement is actually about --
-mirroring the `fields_referenced` / `members_referenced` shape used in
+Given a requirement and a container/enum/interface element that semantic
+similarity has already matched to it, asks Gemini to point out the specific
+fields, members, commands, or parameters that the requirement is actually
+about -- mirroring the `fields_referenced` / `members_referenced` /
+`commands_referenced` / `parameters_referenced` shape used in
 `manual_mapping.json`. Results are cached to disk keyed by a hash of the
 requirement id and the element's source, so reruns are free and only new or
 changed requirement-element pairs trigger an API call.
@@ -31,19 +32,18 @@ MAX_RETRIES = 5
 
 _PROMPT_HEADER = """\
 You are tracing NASA cFS/CF (CCSDS File Delivery Protocol) requirements to the \
-specific fields or enum members of the design elements they have already been \
-matched to.
+specific fields, enum members, commands, or parameters of the design elements \
+they have already been matched to.
 
-For each item below, a requirement is paired with a container or enum it was \
-matched to. Identify which of that element's fields (for a container) or \
-members (for an enum) the requirement is SPECIFICALLY about -- not every \
-field/member present, only the ones the requirement text calls out or clearly \
-implies. If none of the fields/members stand out individually (the \
-requirement matches the element as a whole), return an empty list for that \
-item.
+For each item below, a requirement is paired with a container, enum, or \
+interface it was matched to. Identify which of that element's contained names \
+the requirement is SPECIFICALLY about -- not every name present, only the ones \
+the requirement text calls out or clearly implies. If none stand out \
+individually (the requirement matches the element as a whole), return an empty \
+list for that item.
 
 Return ONLY a JSON object mapping each item id (e.g. "item_0") to a list of \
-field/member name strings, using the exact names as they appear in the source.
+name strings, using the exact names as they appear in the source.
 
 Items:
 """
@@ -56,20 +56,11 @@ def _pair_key(req_id: str, element: EdslElement) -> str:
     return f"{req_id}:{element.package}:{element.name}:{digest}"
 
 
-def _valid_names(element: EdslElement) -> set[str]:
-    #returns the set of valid field/member names for a container/enum element
-    if element.kind == "container":
-        return {name for _, name in element.container_fields}
-    elif element.kind == "enum":
-        return set(element.enum_members)
-
-
 def _item_block(item_id: str, req_text: str, element: EdslElement) -> str:
     #returns the block of text for a single item in the prompt
-    label = "fields" if element.kind == "container" else "members"
     return (
         f"[{item_id}] requirement: {req_text}\n"
-        f"matched {element.kind} (choose only from its {label}):\n"
+        f"matched {element.kind} (choose only from its {element.names_label}):\n"
         f"{element.raw_element_text}"
     )
 
@@ -105,11 +96,11 @@ def _call_gemini(client, model: str, pairs_batch: list[tuple[str, str, EdslEleme
             data = json.loads(response.text) #local item_id is mapped to the list of relevant field/member names for the EdslElement corresponding to the local item_id
             results: dict[str, list[str]] = {}
             for item_id, (req_id, _req_text, element) in zip(item_ids, pairs_batch):
-                names = data.get(item_id) #gets the list of relevant field/member names (produced by the LLM) for the container/enum corresponding to the local item_id
+                names = data.get(item_id) #gets the list of relevant names (produced by the LLM) for the element corresponding to the local item_id
                 if not isinstance(names, list):
                     continue
-                valid = _valid_names(element) #gets the set of valid field/member names for the container/enum corresponding to the local item_id
-                results[_pair_key(req_id, element)] = [n for n in names if n in valid] #extracts the list of relevant field/member names that are also valid and adds them to the results dictionary
+                valid = element.get_contained_names()
+                results[_pair_key(req_id, element)] = [n for n in names if n in valid]
             return results
         except Exception as exc:  # noqa: BLE001
             last_exc = exc
@@ -143,7 +134,7 @@ def select_references(
     """Return {reference_key(req_id, element) -> [relevant field/member names]}.
 
     `all_pairs` is a list of (requirement_id, requirement_text, element) tuples and
-    should already be filtered to elements that actually have fields/members to
+    should already be filtered to elements that actually have contained names to
     choose from.
     """
     root = Path(__file__).resolve().parent.parent
