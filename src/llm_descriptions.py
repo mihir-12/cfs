@@ -82,6 +82,7 @@ def _referenced_context(element: EdslElement, name_to_element_map: dict[str, Eds
 
 def _item_block(item_id: str, element: EdslElement, name_to_element_map: dict) -> str:
     """formats one EDSL element into the chunk of prompt text that gets sent to Gemini for that element."""
+    # to create an ai generated description for an edsl element, we use the local item_id, element kind (enum or container), raw element text/code, and the direct fields/members it references
     block = [f"[{item_id}] kind={element.kind} name={element.name}", element.raw_element_text]
     context = _referenced_context(element, name_to_element_map)
     if context:
