@@ -10,8 +10,11 @@ variables for the kept matches.
 - .edsl files: the formal model of CF and the cFE services it uses
 """
 
+from __future__ import annotations
+
 import json
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -48,6 +51,79 @@ def load_requirements() -> list[dict]:
     return df.to_dict("records")
 
 
+def _match_base(element: EdslElement, score: float) -> dict[str, Any]:
+    """Shared match object fields (no *_referenced keys)."""
+    return {
+        "name": element.name,
+        "package": element.package,
+        "kind": element.kind,
+        "ai_generated_desc": element.ai_generated_desc,
+        "cosine_similarity_score": round(float(score), 4),
+    }
+
+
+def _attach_referenced(
+    match_dict: dict[str, Any], element: EdslElement, referenced: list[str]
+) -> dict[str, Any]:
+    """Attach kind-appropriate *_referenced keys for the given names."""
+    if not referenced:
+        return match_dict
+    if isinstance(element, Container):
+        match_dict["fields_referenced"] = list(referenced)
+    elif isinstance(element, Enum):
+        match_dict["members_referenced"] = list(referenced)
+    elif isinstance(element, Interface):
+        param_names = {p.name for p in element.parameters}
+        commands_referenced = [n for n in referenced if n in element.commands]
+        parameters_referenced = [n for n in referenced if n in param_names]
+        if commands_referenced:
+            match_dict["commands_referenced"] = commands_referenced
+        if parameters_referenced:
+            match_dict["parameters_referenced"] = parameters_referenced
+    return match_dict
+
+
+def _expand_edsl_mapping(
+    paths: list[Any],
+    match_by_name: dict[str, dict[str, Any]],
+    elements_by_name: dict[str, EdslElement],
+) -> list[dict[str, Any]]:
+    """Turn Element / Element.member path strings into match-shaped objects.
+
+    Element.member -> base clone with only that member in *_referenced.
+    Element alone  -> base clone with no *_referenced keys.
+    Unknown paths are dropped.
+    """
+    expanded: list[dict[str, Any]] = []
+    for path in paths:
+        if not isinstance(path, str) or not path.strip():
+            continue
+        if "." in path:
+            el_name, member = path.split(".", 1)
+        else:
+            el_name, member = path, None
+
+        base = match_by_name.get(el_name)
+        element = elements_by_name.get(el_name)
+        if base is None or element is None:
+            continue
+
+        obj = {
+            "name": base["name"],
+            "package": base["package"],
+            "kind": base["kind"],
+            "ai_generated_desc": base["ai_generated_desc"],
+            "cosine_similarity_score": base["cosine_similarity_score"],
+        }
+        if member is not None:
+            if member not in element.get_contained_names():
+                continue
+            _attach_referenced(obj, element, [member])
+        expanded.append(obj)
+    expanded.sort(key=lambda o: o["cosine_similarity_score"], reverse=True)
+    return expanded
+
+
 def main() -> None:
     load_dotenv(ROOT / ".env")
     model = SentenceTransformer("all-mpnet-base-v2", cache_folder=CACHE_DIR)
@@ -71,8 +147,7 @@ def main() -> None:
         ranked = sorted(range(len(elements)), key=lambda j: row[j], reverse=True)
         ranked_deduplicated = []
         seen_edsl_elements = set()
-        # deduplicates the ranked list of EDSL elements
-        # if the same named element appears in multiple EDSL files, only the first occurent (with the highest similarity score) is kept
+        # Deduplicate by name: keep highest-scoring package when names collide.
         for j in ranked:
             if elements[j].name not in seen_edsl_elements:
                 seen_edsl_elements.add(elements[j].name)
@@ -111,34 +186,37 @@ def main() -> None:
         kept_indices.sort(key=lambda j: row[j], reverse=True)
 
         references_by_element = selected.get("references") or {}
-        extracted_variables = selected.get("extracted_variables") or []
+        raw_extracted = selected.get("extracted_variables") or []
 
-        match_dicts = []
+        match_dicts: list[dict[str, Any]] = []
+        match_by_name: dict[str, dict[str, Any]] = {}
+        elements_by_name: dict[str, EdslElement] = {}
         for j in kept_indices:
             element = elements[j]
-            match_dict = {
-                "name": element.name,
-                "package": element.package,
-                "kind": element.kind,
-                "ai_generated_desc": element.ai_generated_desc,
-                "cosine_similarity_score": round(float(row[j]), 4),
-            }
+            match_dict = _match_base(element, row[j])
             referenced = references_by_element.get(element.name, [])
-            if referenced:
-                if isinstance(element, Container):
-                    match_dict["fields_referenced"] = referenced
-                elif isinstance(element, Enum):
-                    match_dict["members_referenced"] = referenced
-                elif isinstance(element, Interface):
-                    commands_referenced = [n for n in referenced if n in element.commands]
-                    parameters_referenced = [
-                        n for n in referenced if n in {p.name for p in element.parameters}
-                    ]
-                    if commands_referenced:
-                        match_dict["commands_referenced"] = commands_referenced
-                    if parameters_referenced:
-                        match_dict["parameters_referenced"] = parameters_referenced
+            _attach_referenced(match_dict, element, referenced)
             match_dicts.append(match_dict)
+            match_by_name[element.name] = match_dict
+            elements_by_name[element.name] = element
+
+        extracted_variables = []
+        for var in raw_extracted:
+            if not isinstance(var, dict):
+                continue
+            name = var.get("name")
+            if not isinstance(name, str) or not name.strip():
+                continue
+            extracted_variables.append(
+                {
+                    "name": name.strip(),
+                    "edsl_mapping": _expand_edsl_mapping(
+                        var.get("edsl_mapping") or [],
+                        match_by_name,
+                        elements_by_name,
+                    ),
+                }
+            )
 
         traceability[req["id"]] = {
             "requirement": req["text"],
