@@ -43,9 +43,13 @@ that construct (command, counter, event, structure, etc.). Discard neighbors \
 that merely share vague domain wording (e.g. a scheduling interface for a \
 No-Op / command-counter requirement).
 
-1) EXTRACT — From the requirement text alone, list notable entities and \
-actions as short phrases (commands, counters, messages, behaviors, etc.). \
-Do not invent EDSL names here; stay close to the requirement wording.
+1) EXTRACT — From the requirement text alone, list notable design entities \
+and actions as short phrases (commands, counters, messages, fields, \
+behaviors, etc.). Do not invent EDSL names here; stay close to the \
+requirement wording. Do NOT extract trivial literals or connective fluff: \
+numeric/word numbers (zero, one, 0, 1, ...), booleans (true/false), bare \
+comparisons, units alone, or other values that are not design constructs. \
+Only keep phrases that name something the software implements or tracks.
 
 2) REFERENCES — For each element in relevant_matches only, list which of its \
 contained names (fields / members / commands / parameters) the requirement \
